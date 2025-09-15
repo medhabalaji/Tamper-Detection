@@ -1,0 +1,37 @@
+#include <Wire.h>
+#include <MPU6050_light.h>
+
+MPU6050 mpu(Wire);
+#define LED_MPU_PIN 26
+const float jerkThreshold = 1.8;
+float prevAccel = 0;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  pinMode(LED_MPU_PIN, OUTPUT);
+
+  byte status = mpu.begin();
+  if (status != 0) {
+    Serial.println("❌ MPU6050 init failed");
+  } else {
+    mpu.calcOffsets();
+    Serial.println("✅ MPU6050 ready");
+  }
+}
+
+void loop() {
+  mpu.update();
+  float ax = mpu.getAccX();
+  float ay = mpu.getAccY();
+  float az = mpu.getAccZ();
+  float totalAccel = sqrt(ax * ax + ay * ay + az * az);
+  float jerk = abs(totalAccel - prevAccel);
+  prevAccel = totalAccel;
+
+  Serial.print("📊 Jerk: ");
+  Serial.println(jerk);
+
+  digitalWrite(LED_MPU_PIN, jerk > jerkThreshold ? HIGH : LOW);
+  delay(300);
+}
